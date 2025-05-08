@@ -54,6 +54,7 @@ async def giveaway(ctx):
     giveaway_message = await ctx.send(
         f"🎉 **GIVEAWAY** 🎉\n\n**Prize:** {prize.content}\n**Description:** {description.content}\nReact with 🎉 to enter!"
     )
+    await asyncio.sleep(1)
     await giveaway_message.add_reaction("🎉")
 
     await asyncio.sleep(duration)
@@ -63,6 +64,7 @@ async def giveaway(ctx):
 
     weighted_users = []
     for user in users:
+        await asyncio.sleep(0.5)  # Small delay to reduce rate limit risk
         member = ctx.guild.get_member(user.id)
         entries = 1
         for role_id in BONUS_ROLE_IDS:
@@ -89,6 +91,7 @@ async def reroll(ctx, message_id: int):
 
         weighted_users = []
         for user in users:
+            await asyncio.sleep(0.5)
             member = ctx.guild.get_member(user.id)
             entries = 1
             for role_id in BONUS_ROLE_IDS:
@@ -105,3 +108,4 @@ async def reroll(ctx, message_id: int):
         await ctx.send("❌ Could not reroll. Please ensure the message ID is correct.")
 
 bot.run("YOUR_BOT_TOKEN")
+
