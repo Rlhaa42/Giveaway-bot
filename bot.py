@@ -34,6 +34,7 @@ def parse_duration(duration_str):
 @commands.has_permissions(administrator=True)
 async def giveaway(ctx):
     if ctx.guild is None or ctx.guild.id != YOUR_SERVER_ID:
+        print(f"User tried command in server ID: {ctx.guild.id}")
         await ctx.send("❌ This bot is only available in the official server.")
         return
 
