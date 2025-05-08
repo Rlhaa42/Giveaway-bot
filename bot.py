@@ -8,7 +8,7 @@ import os
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
-intents.members = True  # REQUIRED for get_member to work
+intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 BONUS_ROLE_IDS = []
@@ -75,30 +75,6 @@ class GiveawayModal(ui.Modal, title="Create a Giveaway"):
         print("⏱️ Time’s up! Attempting to pick a winner...")
 
         try:
-            msg = await interaction.channel.fetch_message(message.id)
-            users = await msg.reactions[0].users().flatten()
-            users = [u for u in users if not u.bot]
-            print(f"🎉 {len(users)} users entered the giveaway.")
-
-            weighted_users = []
-            for user in users:
-                member = interaction.guild.get_member(user.id)
-                if member is None:
-                    print(f"Skipping user {user.id} (not in guild)")
-                    continue
-
-                entries = 1
-                for role_id in BONUS_ROLE_IDS:
-                    if discord.utils.get(member.roles, id=role_id):
-                        entries += 1
-                weighted_users.extend([user] * entries)
-
-            if weighted_users:
-                winner = random.choice(weighted_users)
-                await interaction.channel.send(f"🎉 Congratulations {winner.mention}! You won **{self.prize}**!")
-            else:
-                await interaction.channel.send("😢 No valid entries.")
-                        try:
             msg = await interaction.channel.fetch_message(message.id)
             users = await msg.reactions[0].users().flatten()
             users = [u for u in users if not u.bot]
