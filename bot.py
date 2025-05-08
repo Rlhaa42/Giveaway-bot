@@ -39,8 +39,12 @@ async def giveaway(ctx):
         return
 
     def check_author_and_channel(message):
-        return message.author == ctx.author and message.channel == ctx.channel
-
+    return (
+        message.guild
+        and message.guild.id == YOUR_SERVER_ID
+        and message.author == ctx.author
+        and message.channel == ctx.channel
+    )
     try:
         await ctx.send("🎁 What is the **prize**?")
         prize_msg = await bot.wait_for("message", timeout=60.0, check=check_author_and_channel)
