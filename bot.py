@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 from discord import app_commands, ui, Interaction
 import asyncio
 import random
@@ -11,7 +11,7 @@ intents.guilds = True
 intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
-BONUS_ROLE_IDS = []  # Add any bonus role IDs for extra entries
+BONUS_ROLE_IDS = []
 giveaways = {}
 
 def parse_duration(duration_str):
@@ -19,30 +19,29 @@ def parse_duration(duration_str):
         duration_str = duration_str.strip().lower().replace(" ", "")
         unit = duration_str[-1]
         amount = int(duration_str[:-1])
-        match unit:
-            case 's':
-                return amount
-            case 'm':
-                return amount * 60
-            case 'h':
-                return amount * 3600
-            case 'd':
-                return amount * 86400
-            case _:
-                return None
+        if unit == 's':
+            return amount
+        elif unit == 'm':
+            return amount * 60
+        elif unit == 'h':
+            return amount * 3600
+        elif unit == 'd':
+            return amount * 86400
+        else:
+            return None
     except Exception as e:
         print(f"Duration parse error: {e}")
         return None
 
 class GiveawayModal(ui.Modal, title="Create a Giveaway"):
     prize = ui.TextInput(label="Prize", placeholder="Enter the prize", required=True)
-    duration = ui.TextInput(label="Duration", placeholder="e.g., 1h, 30m, 10s", required=True)
+    duration = ui.TextInput(label="Duration", placeholder="e.g., 10s, 30m, 1h", required=True)
     description = ui.TextInput(label="Description", style=discord.TextStyle.paragraph, required=False)
 
     async def on_submit(self, interaction: discord.Interaction):
         seconds = parse_duration(self.duration)
         if seconds is None:
-            return await interaction.response.send_message("❌ Invalid duration format.", ephemeral=True)
+            return await interaction.response.send_message("❌ Invalid duration format. Please use formats like 10s, 5m, 1h, 2d.", ephemeral=True)
 
         embed = discord.Embed(
             title="🎉 Giveaway 🎉",
@@ -125,3 +124,4 @@ async def reroll(ctx, message_id: int):
         await ctx.send("😢 No valid entries to reroll.")
 
 bot.run(os.getenv("YOUR_BOT_TOKEN"))
+
