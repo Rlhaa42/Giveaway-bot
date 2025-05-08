@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import asyncio
 import random
+import os
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -10,8 +11,8 @@ intents.members = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-BONUS_ROLE_IDS = [123456789012345678]  # Replace with your bonus role IDs
-YOUR_SERVER_ID = 1215071901576073266   # Replace with your server ID
+BONUS_ROLE_IDS = [123456789012345678]  # Replace with real role IDs
+YOUR_SERVER_ID = 1334304518736842913
 
 def parse_duration(duration_str):
     try:
@@ -34,15 +35,11 @@ def parse_duration(duration_str):
 @commands.has_permissions(administrator=True)
 async def giveaway(ctx):
     if ctx.guild is None or ctx.guild.id != YOUR_SERVER_ID:
-        print(f"User tried command in server ID: {ctx.guild.id}")
         await ctx.send("❌ This bot is only available in the official server.")
         return
 
     def check_author_and_channel(message):
-        return (
-            message.author == ctx.author and
-            message.channel == ctx.channel
-        )
+        return message.author == ctx.author and message.channel == ctx.channel
 
     try:
         await ctx.send("🎁 What is the **prize**?")
@@ -62,17 +59,13 @@ async def giveaway(ctx):
     except asyncio.TimeoutError:
         return await ctx.send("⏰ You took too long to respond. Giveaway cancelled.")
 
-    # Send the giveaway message
     giveaway_message = await ctx.send(
         f"🎉 **GIVEAWAY** 🎉\n\n**Prize:** {prize}\n**Description:** {description}\nReact with 🎉 to enter!"
     )
     await asyncio.sleep(1)
     await giveaway_message.add_reaction("🎉")
 
-    # Wait for duration
     await asyncio.sleep(duration)
-
-    # Pick a winner
     message = await ctx.channel.fetch_message(giveaway_message.id)
     users = await message.reactions[0].users().flatten()
     users = [u for u in users if not u.bot]
@@ -92,10 +85,11 @@ async def giveaway(ctx):
         await ctx.send(f"🎉 Congratulations {winner.mention}! You won **{prize}**!")
     else:
         await ctx.send("😢 No valid entries.")
+
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def reroll(ctx, message_id: int):
-    if ctx.guild.id != YOUR_SERVER_ID:
+    if ctx.guild is None or ctx.guild.id != YOUR_SERVER_ID:
         return await ctx.send("❌ This bot is only available in the official server.")
 
     try:
@@ -121,5 +115,4 @@ async def reroll(ctx, message_id: int):
     except:
         await ctx.send("❌ Could not reroll. Please ensure the message ID is correct.")
 
-import os
 bot.run(os.getenv("YOUR_BOT_TOKEN"))
