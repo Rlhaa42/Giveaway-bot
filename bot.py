@@ -51,10 +51,13 @@ class GiveawayModal(ui.Modal, title="Create a Giveaway"):
             return
 
         await interaction.response.defer(ephemeral=True)
+        print(f"⏳ Waiting for {seconds} seconds before picking a winner...")
 
         embed = discord.Embed(
             title="🎉 Giveaway 🎉",
-            description=f"**Prize:** {self.prize}\n**Description:** {self.description}\nReact with 🎉 to enter!",
+            description=f"**Prize:** {self.prize}
+**Description:** {self.description}
+React with 🎉 to enter!",
             color=discord.Color.green()
         )
         embed.set_footer(text=f"Ends in: {self.duration}")
@@ -71,37 +74,43 @@ class GiveawayModal(ui.Modal, title="Create a Giveaway"):
         await interaction.followup.send("✅ Giveaway started!", ephemeral=True)
 
         await asyncio.sleep(seconds)
+        print("⏱️ Time’s up! Attempting to pick a winner...")
 
-        msg = await interaction.channel.fetch_message(message.id)
-        users = await msg.reactions[0].users().flatten()
-        users = [u for u in users if not u.bot]
+        try:
+            msg = await interaction.channel.fetch_message(message.id)
+            users = await msg.reactions[0].users().flatten()
+            users = [u for u in users if not u.bot]
+            print(f"🎉 {len(users)} users entered the giveaway.")
 
-        weighted_users = []
-        for user in users:
-            member = interaction.guild.get_member(user.id)
-            entries = 1
-            for role_id in BONUS_ROLE_IDS:
-                if discord.utils.get(member.roles, id=role_id):
-                    entries += 1
-            weighted_users.extend([user] * entries)
+            weighted_users = []
+            for user in users:
+                member = interaction.guild.get_member(user.id)
+                entries = 1
+                for role_id in BONUS_ROLE_IDS:
+                    if discord.utils.get(member.roles, id=role_id):
+                        entries += 1
+                weighted_users.extend([user] * entries)
 
-        if weighted_users:
-            winner = random.choice(weighted_users)
-            await interaction.channel.send(f"🎉 Congratulations {winner.mention}! You won **{self.prize}**!")
-        else:
-            await interaction.channel.send("😢 No valid entries.")
+            if weighted_users:
+                winner = random.choice(weighted_users)
+                await interaction.channel.send(f"🎉 Congratulations {winner.mention}! You won **{self.prize}**!")
+            else:
+                await interaction.channel.send("😢 No valid entries.")
+        except Exception as e:
+            print(f"❌ Error during winner selection: {e}")
+            await interaction.channel.send("❌ Failed to pick a winner due to an error.")
         giveaways[message.id]["ended"] = True
 
 @bot.event
 async def on_ready():
-    print(f"Bot is ready. Logged in as {bot.user}")
+    print(f"✅ Bot is ready. Logged in as {bot.user}")
     try:
-        synced = await bot.tree.sync(guild=discord.Object(id=1334304518736842913))
-        print(f"Synced {len(synced)} command(s).")
+        synced = await bot.tree.sync()
+        print(f"✅ Globally synced {len(synced)} commands.")
     except Exception as e:
-        print(f"Failed to sync commands: {e}")
+        print(f"❌ Global sync failed: {e}")
 
-@bot.tree.command(guild=discord.Object(id=1334304518736842913), name="create_giveaway", description="Create a new giveaway with a modal form")
+@bot.tree.command(name="create_giveaway", description="Create a new giveaway with a modal form")
 async def create_giveaway(interaction: discord.Interaction):
     await interaction.response.send_modal(GiveawayModal())
 
