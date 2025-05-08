@@ -55,7 +55,9 @@ class GiveawayModal(ui.Modal, title="Create a Giveaway"):
 
         embed = discord.Embed(
             title="🎉 Giveaway 🎉",
-           description=f"**Prize:** {self.prize}\\n**Description:** {self.description}\\nReact with 🎉 to enter!",
+          description=f"""**Prize:** {self.prize}
+**Description:** {self.description}
+React with 🎉 to enter!""",
         )
         embed.set_footer(text=f"Ends in: {self.duration}")
         message = await interaction.channel.send(embed=embed)
