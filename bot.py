@@ -33,15 +33,21 @@ def parse_duration(duration_str):
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def giveaway(ctx):
-    if ctx.guild.id != YOUR_SERVER_ID:
+    if ctx.guild is None or ctx.guild.id != YOUR_SERVER_ID:
         return await ctx.send("❌ This bot is only available in the official server.")
 
     def check(m):
-        return m.author == ctx.author and m.channel == ctx.channel
+        # This check ensures the message is from the same server, same channel, same user
+        return (
+            m.author == ctx.author
+            and m.channel == ctx.channel
+            and m.guild is not None
+            and m.guild.id == YOUR_SERVER_ID
+        )
 
     await ctx.send("🎁 What is the **prize**?")
     prize = await bot.wait_for('message', check=check)
-    
+
     await ctx.send("🕒 What is the **duration**? (e.g. 1h, 30m, 10s)")
     duration_msg = await bot.wait_for('message', check=check)
     duration = parse_duration(duration_msg.content)
@@ -64,7 +70,7 @@ async def giveaway(ctx):
 
     weighted_users = []
     for user in users:
-        await asyncio.sleep(0.5)  # Small delay to reduce rate limit risk
+        await asyncio.sleep(0.5)
         member = ctx.guild.get_member(user.id)
         entries = 1
         for role_id in BONUS_ROLE_IDS:
