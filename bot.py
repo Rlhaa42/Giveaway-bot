@@ -8,7 +8,7 @@ import os
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
-intents.members = True
+intents.members = True  # REQUIRED for get_member to work
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 BONUS_ROLE_IDS = []
@@ -55,9 +55,8 @@ class GiveawayModal(ui.Modal, title="Create a Giveaway"):
 
         embed = discord.Embed(
             title="🎉 Giveaway 🎉",
-          description=f"""**Prize:** {self.prize}
-**Description:** {self.description}
-React with 🎉 to enter!""",
+            description=f"**Prize:** {self.prize}\n**Description:** {self.description}\nReact with 🎉 to enter!",
+            color=discord.Color.green()
         )
         embed.set_footer(text=f"Ends in: {self.duration}")
         message = await interaction.channel.send(embed=embed)
@@ -84,8 +83,10 @@ React with 🎉 to enter!""",
             weighted_users = []
             for user in users:
                 member = interaction.guild.get_member(user.id)
-if member is None:
-    continue  # skip users that couldn't be found
+                if member is None:
+                    print(f"Skipping user {user.id} (not in guild)")
+                    continue
+
                 entries = 1
                 for role_id in BONUS_ROLE_IDS:
                     if discord.utils.get(member.roles, id=role_id):
@@ -100,6 +101,7 @@ if member is None:
         except Exception as e:
             print(f"❌ Error during winner selection: {e}")
             await interaction.channel.send("❌ Failed to pick a winner due to an error.")
+
         giveaways[message.id]["ended"] = True
 
 @bot.event
