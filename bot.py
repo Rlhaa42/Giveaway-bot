@@ -44,7 +44,13 @@ class GiveawayModal(ui.Modal, title="Create a Giveaway"):
         print(f"User entered duration: '{self.duration}'")
         seconds = parse_duration(str(self.duration))
         if seconds is None:
-            return await interaction.response.send_message("❌ Invalid duration format. Please use formats like 10s, 5m, 1h, 2d.", ephemeral=True)
+            await interaction.response.send_message(
+                "❌ Invalid duration format. Please use formats like 10s, 5m, 1h, 2d.",
+                ephemeral=True
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True)
 
         embed = discord.Embed(
             title="🎉 Giveaway 🎉",
@@ -62,7 +68,7 @@ class GiveawayModal(ui.Modal, title="Create a Giveaway"):
             "ended": False
         }
 
-        await interaction.response.send_message("✅ Giveaway started!", ephemeral=True)
+        await interaction.followup.send("✅ Giveaway started!", ephemeral=True)
 
         await asyncio.sleep(seconds)
 
@@ -100,3 +106,4 @@ async def create_giveaway(interaction: discord.Interaction):
     await interaction.response.send_modal(GiveawayModal())
 
 bot.run(os.getenv("YOUR_BOT_TOKEN"))
+
