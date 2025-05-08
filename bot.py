@@ -16,19 +16,22 @@ giveaways = {}
 
 def parse_duration(duration_str):
     try:
+        duration_str = duration_str.strip().lower().replace(" ", "")
         unit = duration_str[-1]
         amount = int(duration_str[:-1])
-        if unit == 's':
-            return amount
-        elif unit == 'm':
-            return amount * 60
-        elif unit == 'h':
-            return amount * 3600
-        elif unit == 'd':
-            return amount * 86400
-        else:
-            return None
-    except:
+        match unit:
+            case 's':
+                return amount
+            case 'm':
+                return amount * 60
+            case 'h':
+                return amount * 3600
+            case 'd':
+                return amount * 86400
+            case _:
+                return None
+    except Exception as e:
+        print(f"Duration parse error: {e}")
         return None
 
 class GiveawayModal(ui.Modal, title="Create a Giveaway"):
