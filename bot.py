@@ -85,12 +85,12 @@ class GiveawayModal(ui.Modal, title="Create a Giveaway"):
 async def on_ready():
     print(f"Bot is ready. Logged in as {bot.user}")
     try:
-        synced = await bot.tree.sync()
-        print(f"Synced {len(synced)} command(s).")
+        await bot.tree.sync(guild=discord.Object(id=1334304518736842913))
+        print("Synced commands to the server.")
     except Exception as e:
         print(f"Failed to sync commands: {e}")
 
-@bot.tree.command(name="create_giveaway", description="Create a new giveaway with a modal form")
+@bot.tree.command(guild=discord.Object(id=1334304518736842913), name="create_giveaway", description="Create a new giveaway with a modal form")
 async def create_giveaway(interaction: discord.Interaction):
     await interaction.response.send_modal(GiveawayModal())
 
