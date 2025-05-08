@@ -84,6 +84,8 @@ React with 🎉 to enter!""",
             weighted_users = []
             for user in users:
                 member = interaction.guild.get_member(user.id)
+if member is None:
+    continue  # skip users that couldn't be found
                 entries = 1
                 for role_id in BONUS_ROLE_IDS:
                     if discord.utils.get(member.roles, id=role_id):
