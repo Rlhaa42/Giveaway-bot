@@ -16,7 +16,9 @@ giveaways = {}
 
 def parse_duration(duration_str):
     try:
+        print(f"Raw duration input: '{duration_str}'")
         duration_str = duration_str.strip().lower().replace(" ", "")
+        print(f"Sanitized input: '{duration_str}'")
         unit = duration_str[-1]
         amount = int(duration_str[:-1])
         if unit == 's':
@@ -39,7 +41,8 @@ class GiveawayModal(ui.Modal, title="Create a Giveaway"):
     description = ui.TextInput(label="Description", style=discord.TextStyle.paragraph, required=False)
 
     async def on_submit(self, interaction: discord.Interaction):
-        seconds = parse_duration(self.duration)
+        print(f"User entered duration: '{self.duration}'")
+        seconds = parse_duration(str(self.duration))
         if seconds is None:
             return await interaction.response.send_message("❌ Invalid duration format. Please use formats like 10s, 5m, 1h, 2d.", ephemeral=True)
 
@@ -87,49 +90,13 @@ class GiveawayModal(ui.Modal, title="Create a Giveaway"):
 async def on_ready():
     print(f"Bot is ready. Logged in as {bot.user}")
     try:
-        synced = await bot.tree.sync()
-        print(f"Synced {len(synced)} global commands.")
+        synced = await bot.tree.sync(guild=discord.Object(id=1334304518736842913))
+        print(f"Synced {len(synced)} command(s).")
     except Exception as e:
         print(f"Failed to sync commands: {e}")
 
-@bot.tree.command(name="create_giveaway", description="Create a new giveaway")
+@bot.tree.command(guild=discord.Object(id=1334304518736842913), name="create_giveaway", description="Create a new giveaway with a modal form")
 async def create_giveaway(interaction: discord.Interaction):
     await interaction.response.send_modal(GiveawayModal())
 
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def reroll(ctx, message_id: int):
-    if message_id not in giveaways or not giveaways[message_id]["ended"]:
-        return await ctx.send("❌ Invalid or active giveaway ID.")
-
-    giveaway = giveaways[message_id]
-    channel = bot.get_channel(giveaway["channel_id"])
-    message = await channel.fetch_message(giveaway["message_id"])
-    users = await message.reactions[0].users().flatten()
-    users = [u for u in users if not u.bot]
-
-    weighted_users = []
-    for user in users:
-        member = ctx.guild.get_member(user.id)
-        entries = 1
-        for role_id in BONUS_ROLE_IDS:
-            if discord.utils.get(member.roles, id=role_id):
-                entries += 1
-        weighted_users.extend([user] * entries)
-
-    if weighted_users:
-        winner = random.choice(weighted_users)
-        await ctx.send(f"🔁 New winner: {winner.mention}! Congratulations!")
-    else:
-        await ctx.send("😢 No valid entries to reroll.")
-
-@bot.event
-async def on_connect():
-    try:
-        await bot.tree.sync(guild=discord.Object(id=1334304518736842913))
-        print("Forced slash command sync on connect.")
-    except Exception as e:
-        print(f"Manual sync error: {e}")
-
 bot.run(os.getenv("YOUR_BOT_TOKEN"))
-
