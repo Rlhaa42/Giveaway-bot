@@ -98,7 +98,7 @@ class GiveawayModal(ui.Modal, title="Create a Giveaway"):
                 await interaction.channel.send(f"🎉 Congratulations {winner.mention}! You won **{self.prize}**!")
             else:
                 await interaction.channel.send("😢 No valid entries.")
-                try:
+                        try:
             msg = await interaction.channel.fetch_message(message.id)
             users = await msg.reactions[0].users().flatten()
             users = [u for u in users if not u.bot]
