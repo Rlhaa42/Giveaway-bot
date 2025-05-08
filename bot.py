@@ -76,7 +76,7 @@ class GiveawayModal(ui.Modal, title="Create a Giveaway"):
 
         try:
             msg = await interaction.channel.fetch_message(message.id)
-            users = await msg.reactions[0].users().flatten()
+            users = [user async for user in msg.reactions[0].users()]
             users = [u for u in users if not u.bot]
             print(f"🎉 {len(users)} users entered the giveaway.")
 
