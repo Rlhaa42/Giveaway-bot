@@ -107,5 +107,5 @@ async def reroll(ctx, message_id: int):
     except:
         await ctx.send("❌ Could not reroll. Please ensure the message ID is correct.")
 
-bot.run("YOUR_BOT_TOKEN")
-
+import os
+bot.run(os.getenv("YOUR_BOT_TOKEN"))
