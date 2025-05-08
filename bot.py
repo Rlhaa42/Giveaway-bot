@@ -1,5 +1,6 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
+from discord import app_commands, ui, Interaction
 import asyncio
 import random
 import os
@@ -9,10 +10,9 @@ intents.message_content = True
 intents.guilds = True
 intents.members = True
 
-bot = commands.Bot(command_prefix='!', intents=intents)
-
-BONUS_ROLE_IDS = [123456789012345678]  # Replace with real role IDs
-YOUR_SERVER_ID = 1334304518736842913
+bot = commands.Bot(command_prefix="!", intents=intents)
+BONUS_ROLE_IDS = []  # Add any bonus role IDs for extra entries
+giveaways = {}
 
 def parse_duration(duration_str):
     try:
@@ -31,52 +31,83 @@ def parse_duration(duration_str):
     except:
         return None
 
+class GiveawayModal(ui.Modal, title="Create a Giveaway"):
+    prize = ui.TextInput(label="Prize", placeholder="Enter the prize", required=True)
+    duration = ui.TextInput(label="Duration", placeholder="e.g., 1h, 30m, 10s", required=True)
+    description = ui.TextInput(label="Description", style=discord.TextStyle.paragraph, required=False)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        seconds = parse_duration(self.duration)
+        if seconds is None:
+            return await interaction.response.send_message("❌ Invalid duration format.", ephemeral=True)
+
+        embed = discord.Embed(
+            title="🎉 Giveaway 🎉",
+            description=f"**Prize:** {self.prize}\n**Description:** {self.description}\nReact with 🎉 to enter!",
+            color=discord.Color.green()
+        )
+        embed.set_footer(text=f"Ends in: {self.duration}")
+        message = await interaction.channel.send(embed=embed)
+        await message.add_reaction("🎉")
+
+        giveaways[message.id] = {
+            "prize": self.prize,
+            "channel_id": interaction.channel.id,
+            "message_id": message.id,
+            "ended": False
+        }
+
+        await interaction.response.send_message("✅ Giveaway started!", ephemeral=True)
+
+        await asyncio.sleep(seconds)
+
+        msg = await interaction.channel.fetch_message(message.id)
+        users = await msg.reactions[0].users().flatten()
+        users = [u for u in users if not u.bot]
+
+        weighted_users = []
+        for user in users:
+            member = interaction.guild.get_member(user.id)
+            entries = 1
+            for role_id in BONUS_ROLE_IDS:
+                if discord.utils.get(member.roles, id=role_id):
+                    entries += 1
+            weighted_users.extend([user] * entries)
+
+        if weighted_users:
+            winner = random.choice(weighted_users)
+            await interaction.channel.send(f"🎉 Congratulations {winner.mention}! You won **{self.prize}**!")
+        else:
+            await interaction.channel.send("😢 No valid entries.")
+        giveaways[message.id]["ended"] = True
+
+@bot.event
+async def on_ready():
+    print(f"Bot is ready. Logged in as {bot.user}")
+    try:
+        synced = await bot.tree.sync()
+        print(f"Synced {len(synced)} command(s).")
+    except Exception as e:
+        print(f"Failed to sync commands: {e}")
+
+@bot.tree.command(name="create_giveaway", description="Create a new giveaway with a modal form")
+async def create_giveaway(interaction: discord.Interaction):
+    await interaction.response.send_modal(GiveawayModal())
+
 @bot.command()
 @commands.has_permissions(administrator=True)
-async def giveaway(ctx):
-    if ctx.guild is None or ctx.guild.id != YOUR_SERVER_ID:
-        await ctx.send("❌ This bot is only available in the official server.")
-        return
+async def reroll(ctx, message_id: int):
+    if message_id not in giveaways or not giveaways[message_id]["ended"]:
+        return await ctx.send("❌ Invalid or active giveaway ID.")
 
-    def check_author_and_channel(message):
-    return (
-        message.guild
-        and message.guild.id == YOUR_SERVER_ID
-        and message.author == ctx.author
-        and message.channel == ctx.channel
-    )
-    try:
-        await ctx.send("🎁 What is the **prize**?")
-        prize_msg = await bot.wait_for("message", timeout=60.0, check=check_author_and_channel)
-        prize = prize_msg.content
-
-        await ctx.send("🕒 What is the **duration**? (e.g. 1h, 30m, 10s)")
-        duration_msg = await bot.wait_for("message", timeout=60.0, check=check_author_and_channel)
-        duration = parse_duration(duration_msg.content)
-        if duration is None:
-            return await ctx.send("❌ Invalid duration format.")
-
-        await ctx.send("📄 Enter a short **description**:")
-        desc_msg = await bot.wait_for("message", timeout=60.0, check=check_author_and_channel)
-        description = desc_msg.content
-
-    except asyncio.TimeoutError:
-        return await ctx.send("⏰ You took too long to respond. Giveaway cancelled.")
-
-    giveaway_message = await ctx.send(
-        f"🎉 **GIVEAWAY** 🎉\n\n**Prize:** {prize}\n**Description:** {description}\nReact with 🎉 to enter!"
-    )
-    await asyncio.sleep(1)
-    await giveaway_message.add_reaction("🎉")
-
-    await asyncio.sleep(duration)
-    message = await ctx.channel.fetch_message(giveaway_message.id)
+    giveaway = giveaways[message_id]
+    channel = bot.get_channel(giveaway["channel_id"])
+    message = await channel.fetch_message(giveaway["message_id"])
     users = await message.reactions[0].users().flatten()
     users = [u for u in users if not u.bot]
 
     weighted_users = []
     for user in users:
-        await asyncio.sleep(0.5)
         member = ctx.guild.get_member(user.id)
         entries = 1
         for role_id in BONUS_ROLE_IDS:
@@ -86,37 +117,8 @@ async def giveaway(ctx):
 
     if weighted_users:
         winner = random.choice(weighted_users)
-        await ctx.send(f"🎉 Congratulations {winner.mention}! You won **{prize}**!")
+        await ctx.send(f"🔁 New winner: {winner.mention}! Congratulations!")
     else:
-        await ctx.send("😢 No valid entries.")
-
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def reroll(ctx, message_id: int):
-    if ctx.guild is None or ctx.guild.id != YOUR_SERVER_ID:
-        return await ctx.send("❌ This bot is only available in the official server.")
-
-    try:
-        message = await ctx.channel.fetch_message(message_id)
-        users = await message.reactions[0].users().flatten()
-        users = [u for u in users if not u.bot]
-
-        weighted_users = []
-        for user in users:
-            await asyncio.sleep(0.5)
-            member = ctx.guild.get_member(user.id)
-            entries = 1
-            for role_id in BONUS_ROLE_IDS:
-                if discord.utils.get(member.roles, id=role_id):
-                    entries += 1
-            weighted_users.extend([user] * entries)
-
-        if weighted_users:
-            winner = random.choice(weighted_users)
-            await ctx.send(f"🔁 New winner: {winner.mention}! Congratulations!")
-        else:
-            await ctx.send("😢 No valid entries to reroll.")
-    except:
-        await ctx.send("❌ Could not reroll. Please ensure the message ID is correct.")
+        await ctx.send("😢 No valid entries to reroll.")
 
 bot.run(os.getenv("YOUR_BOT_TOKEN"))
