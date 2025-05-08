@@ -11,7 +11,7 @@ intents.members = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 BONUS_ROLE_IDS = [123456789012345678]  # Replace with your bonus role IDs
-YOUR_SERVER_ID = 123456789012345678    # Replace with your server ID
+YOUR_SERVER_ID = 1334304518736842913    # Replace with your server ID
 
 def parse_duration(duration_str):
     try:
