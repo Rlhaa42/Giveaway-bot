@@ -123,5 +123,13 @@ async def reroll(ctx, message_id: int):
     else:
         await ctx.send("😢 No valid entries to reroll.")
 
+@bot.event
+async def on_connect():
+    try:
+        await bot.tree.sync(guild=discord.Object(id=1334304518736842913))
+        print("Forced slash command sync on connect.")
+    except Exception as e:
+        print(f"Manual sync error: {e}")
+
 bot.run(os.getenv("YOUR_BOT_TOKEN"))
 
