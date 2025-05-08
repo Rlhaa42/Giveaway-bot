@@ -34,36 +34,44 @@ def parse_duration(duration_str):
 @commands.has_permissions(administrator=True)
 async def giveaway(ctx):
     if ctx.guild is None or ctx.guild.id != YOUR_SERVER_ID:
-        return await ctx.send("❌ This bot is only available in the official server.")
+        await ctx.send("❌ This bot is only available in the official server.")
+        return
 
-    def check(m):
-        # This check ensures the message is from the same server, same channel, same user
+    def check_author_and_channel(message):
         return (
-            m.author == ctx.author
-            and m.channel == ctx.channel
-            and m.guild is not None
-            and m.guild.id == YOUR_SERVER_ID
+            message.author == ctx.author and
+            message.channel == ctx.channel
         )
 
-    await ctx.send("🎁 What is the **prize**?")
-    prize = await bot.wait_for('message', check=check)
+    try:
+        await ctx.send("🎁 What is the **prize**?")
+        prize_msg = await bot.wait_for("message", timeout=60.0, check=check_author_and_channel)
+        prize = prize_msg.content
 
-    await ctx.send("🕒 What is the **duration**? (e.g. 1h, 30m, 10s)")
-    duration_msg = await bot.wait_for('message', check=check)
-    duration = parse_duration(duration_msg.content)
-    if duration is None:
-        return await ctx.send("❌ Invalid duration format.")
+        await ctx.send("🕒 What is the **duration**? (e.g. 1h, 30m, 10s)")
+        duration_msg = await bot.wait_for("message", timeout=60.0, check=check_author_and_channel)
+        duration = parse_duration(duration_msg.content)
+        if duration is None:
+            return await ctx.send("❌ Invalid duration format.")
 
-    await ctx.send("📄 Enter a short **description**:")
-    description = await bot.wait_for('message', check=check)
+        await ctx.send("📄 Enter a short **description**:")
+        desc_msg = await bot.wait_for("message", timeout=60.0, check=check_author_and_channel)
+        description = desc_msg.content
 
+    except asyncio.TimeoutError:
+        return await ctx.send("⏰ You took too long to respond. Giveaway cancelled.")
+
+    # Send the giveaway message
     giveaway_message = await ctx.send(
-        f"🎉 **GIVEAWAY** 🎉\n\n**Prize:** {prize.content}\n**Description:** {description.content}\nReact with 🎉 to enter!"
+        f"🎉 **GIVEAWAY** 🎉\n\n**Prize:** {prize}\n**Description:** {description}\nReact with 🎉 to enter!"
     )
     await asyncio.sleep(1)
     await giveaway_message.add_reaction("🎉")
 
+    # Wait for duration
     await asyncio.sleep(duration)
+
+    # Pick a winner
     message = await ctx.channel.fetch_message(giveaway_message.id)
     users = await message.reactions[0].users().flatten()
     users = [u for u in users if not u.bot]
@@ -80,10 +88,9 @@ async def giveaway(ctx):
 
     if weighted_users:
         winner = random.choice(weighted_users)
-        await ctx.send(f"🎉 Congratulations {winner.mention}! You won **{prize.content}**!")
+        await ctx.send(f"🎉 Congratulations {winner.mention}! You won **{prize}**!")
     else:
         await ctx.send("😢 No valid entries.")
-
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def reroll(ctx, message_id: int):
