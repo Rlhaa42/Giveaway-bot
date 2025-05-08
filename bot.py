@@ -100,7 +100,7 @@ class GiveawayModal(ui.Modal, title="Create a Giveaway"):
                 await interaction.channel.send("😢 No valid entries.")
         except Exception as e:
             print(f"❌ Error during winner selection: {e}")
-            await interaction.channel.send("❌ Failed to pick a winner due to an error.")
+         await interaction.channel.send(f"❌ Failed to pick a winner due to: `{e}`")
 
         giveaways[message.id]["ended"] = True
 
